@@ -1,4 +1,276 @@
-ient');
+import React, { useState, useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars
+import { 
+  Users, DollarSign, Wifi, FileText, BarChart3, 
+  Settings, LogOut, Plus, Search, Filter, Download,
+  Upload, Eye, Edit, Trash2, CheckCircle, XCircle,
+  Clock, TrendingUp, Server, Activity
+} from 'lucide-react';
+
+// Mock API Service (Replace with actual backend calls)
+const API = {
+  // Auth
+  login: async (credentials) => {
+    return { success: true, user: { id: 1, name: 'Admin', role: 'admin' }, token: 'mock-token' };
+  },
+  
+  // Clients
+  getClients: async () => {
+    return JSON.parse(localStorage.getItem('isp_clients') || '[]');
+  },
+  saveClient: async (client) => {
+    const clients = await API.getClients();
+    if (client.id) {
+      const index = clients.findIndex(c => c.id === client.id);
+      clients[index] = client;
+    } else {
+      client.id = Date.now();
+      clients.push(client);
+    }
+    localStorage.setItem('isp_clients', JSON.stringify(clients));
+    return client;
+  },
+  deleteClient: async (id) => {
+    let clients = await API.getClients();
+    clients = clients.filter(c => c.id !== id);
+    localStorage.setItem('isp_clients', JSON.stringify(clients));
+  },
+  
+  // Billing
+  getBilling: async () => {
+    return JSON.parse(localStorage.getItem('isp_billing') || '[]');
+  },
+  saveBilling: async (bill) => {
+    const billing = await API.getBilling();
+    if (bill.id) {
+      const index = billing.findIndex(b => b.id === bill.id);
+      billing[index] = bill;
+    } else {
+      bill.id = Date.now();
+      billing.push(bill);
+    }
+    localStorage.setItem('isp_billing', JSON.stringify(billing));
+    return bill;
+  },
+  
+  // MikroTik Integration
+  mikrotik: {
+    connect: async (config) => {
+      return { success: true, message: 'Connected to MikroTik' };
+    },
+    getUsers: async () => {
+      return []; // Mock PPPoE users
+    },
+    createUser: async (userData) => {
+      return { success: true, username: userData.username };
+    },
+    updateUser: async (username, data) => {
+      return { success: true };
+    },
+    deleteUser: async (username) => {
+      return { success: true };
+    }
+  }
+};
+
+// Main App Component
+export default function ISPBillingCRM() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [clients, setClients] = useState([]);
+  const [billing, setBilling] = useState([]);
+  const [showModal, setShowModal] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    const clientsData = await API.getClients();
+    const billingData = await API.getBilling();
+    setClients(clientsData);
+    setBilling(billingData);
+  };
+
+  // Login Component
+  const LoginScreen = () => {
+    const [credentials, setCredentials] = useState({ username: '', password: '' });
+
+    const handleLogin = async (e) => {
+      e.preventDefault();
+      const result = await API.login(credentials);
+      if (result.success) {
+        setCurrentUser(result.user);
+        localStorage.setItem('isp_user', JSON.stringify(result.user));
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+          <div className="text-center mb-8">
+            <Wifi className="w-16 h-16 mx-auto text-blue-600 mb-4" />
+            <h1 className="text-3xl font-bold text-gray-800">ISP Billing CRM</h1>
+            <p className="text-gray-600 mt-2">Sign in to your account</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Username
+              </label>
+              <input
+                type="text"
+                value={credentials.username}
+                onChange={(e) => setCredentials({...credentials, username: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter username"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                value={credentials.password}
+                onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter password"
+                required
+              />
+            </div>
+            
+            <button
+              type="submit"
+              className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            >
+              Sign In
+            </button>
+          </form>
+          
+          <p className="text-center text-sm text-gray-600 mt-6">
+            Demo: admin / admin
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  // Dashboard Component
+  const Dashboard = () => {
+    const totalClients = clients.length;
+    const activeClients = clients.filter(c => c.status === 'active').length;
+    const totalRevenue = billing.reduce((sum, b) => sum + (b.amountPaid || 0), 0);
+    const pendingPayments = billing.filter(b => b.status === 'due').length;
+
+    const stats = [
+      { title: 'Total Clients', value: totalClients, icon: Users, color: 'bg-blue-500' },
+      { title: 'Active Clients', value: activeClients, icon: Activity, color: 'bg-green-500' },
+      { title: 'Total Revenue', value: `৳${totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-purple-500' },
+      { title: 'Pending Payments', value: pendingPayments, icon: Clock, color: 'bg-orange-500' }
+    ];
+
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-gray-800">Dashboard Overview</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, idx) => (
+            <div key={idx} className="bg-white rounded-xl shadow-md p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-gray-600 text-sm">{stat.title}</p>
+                  <p className="text-2xl font-bold text-gray-800 mt-2">{stat.value}</p>
+                </div>
+                <div className={`${stat.color} p-3 rounded-lg`}>
+                  <stat.icon className="w-6 h-6 text-white" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Recent Clients</h3>
+            <div className="space-y-3">
+              {clients.slice(0, 5).map(client => (
+                <div key={client.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-800">{client.name}</p>
+                    <p className="text-sm text-gray-600">{client.package}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                    client.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {client.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Payment Status</h3>
+            <div className="space-y-3">
+              {billing.slice(0, 5).map(bill => {
+                const client = clients.find(c => c.id === bill.clientId);
+                return (
+                  <div key={bill.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div>
+                      <p className="font-medium text-gray-800">{client?.name || 'Unknown'}</p>
+                      <p className="text-sm text-gray-600">৳{bill.amount}</p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      bill.status === 'paid' ? 'bg-green-100 text-green-800' : 
+                      bill.status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-red-100 text-red-800'
+                    }`}>
+                      {bill.status}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Clients Component
+  const ClientsManager = () => {
+    const [formData, setFormData] = useState({
+      name: '', phone: '', email: '', address: '',
+      package: '10Mbps-500', status: 'active', mikrotikUser: ''
+    });
+
+    const filteredClients = clients.filter(client => {
+      const matchesSearch = client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           client.phone?.includes(searchTerm);
+      const matchesFilter = filterStatus === 'all' || client.status === filterStatus;
+      return matchesSearch && matchesFilter;
+    });
+
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      await API.saveClient(selectedItem ? {...formData, id: selectedItem.id} : formData);
+      await loadData();
+      setShowModal(null);
+      setSelectedItem(null);
+      setFormData({ name: '', phone: '', email: '', address: '', package: '10Mbps-500', status: 'active', mikrotikUser: '' });
+    };
+
+    const handleEdit = (client) => {
+      setSelectedItem(client);
+      setFormData(client);
+      setShowModal('client');
     };
 
     const handleDelete = async (id) => {
