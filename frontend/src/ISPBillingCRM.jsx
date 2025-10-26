@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-// eslint-disable-next-line no-unused-vars
+/* eslint-disable no-unused-vars */
 import { 
   Users, DollarSign, Wifi, FileText, BarChart3, 
   Settings, LogOut, Plus, Search, Filter, Download,
