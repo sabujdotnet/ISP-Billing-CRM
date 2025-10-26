@@ -18,15 +18,15 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { name, phone, email, address, package, monthly_fee, status, mikrotik_username } = req.body;
+  const { name, phone, email, address, packageType, monthly_fee, status, mikrotik_username } = req.body;
   const userId = req.user.id;
 
   try {
     const result = await db`
       INSERT INTO clients (
-        user_id, name, phone, email, address, package, monthly_fee, status, mikrotik_username
+        user_id, name, phone, email, address, packageType, monthly_fee, status, mikrotik_username
       ) VALUES (
-        ${userId}, ${name}, ${phone}, ${email}, ${address}, ${package}, ${monthly_fee}, ${status}, ${mikrotik_username}
+        ${userId}, ${name}, ${phone}, ${email}, ${address}, ${packageType}, ${monthly_fee}, ${status}, ${mikrotik_username}
       )
       RETURNING *
     `;
@@ -38,7 +38,7 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  const { name, phone, email, address, package, monthly_fee, status, mikrotik_username } = req.body;
+  const { name, phone, email, address, packageType, monthly_fee, status, mikrotik_username } = req.body;
 
   try {
     const result = await db`
@@ -47,7 +47,7 @@ router.put('/:id', async (req, res) => {
         phone = ${phone},
         email = ${email},
         address = ${address},
-        package = ${package},
+        packageType = ${packageType},
         monthly_fee = ${monthly_fee},
         status = ${status},
         mikrotik_username = ${mikrotik_username}
