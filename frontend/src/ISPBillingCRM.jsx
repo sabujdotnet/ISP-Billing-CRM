@@ -273,11 +273,12 @@ export default function ISPBillingCRM() {
     };
 
     const handleDelete = async (id) => {
-      if (confirm('Are you sure you want to delete this client?')) {
-        await API.deleteClient(id);
-        await loadData();
-      }
-    };
+  // eslint-disable-next-line no-restricted-globals
+  if (window.confirm('Are you sure you want to delete this client?')) {
+    await API.deleteClient(id);
+    await loadData();
+    }
+  };
 
     return (
       <div className="space-y-6">
