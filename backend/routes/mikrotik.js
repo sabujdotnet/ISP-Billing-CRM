@@ -1,5 +1,6 @@
 import express from 'express';
-import { RouterOS } from 'routeros';
+import routeros from 'routeros';
+const { RouterOS } = routeros;
 import { db } from '../config/database.js';
 
 const router = express.Router();
